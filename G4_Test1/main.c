@@ -81,6 +81,88 @@ void process_command(char *cmd) {
             USART_putString("\r\nRegistro invalido. Debe ser de R0 a R12.\r\n");
         }
     }
+    // 3. Memory Display (MD [start] [end])
+    else if (strcasecmp(op, "MD") == 0) {
+        uint32_t start = 0x20000000; // Dirección inicial por defecto (SRAM)
+        uint32_t end = start + 0x40;  // 64 bytes por defecto (0x40)
+
+        // Si el usuario ingresa inicio
+        if (parsed >= 2) {
+            start = (uint32_t)strtoul(arg1, NULL, 16);
+            end = start + 0x40; // Mantener un rango de 64 bytes si no da el final
+        }
+        // Si el usuario ingresa inicio y fin
+        if (parsed >= 3) {
+            end = (uint32_t)strtoul(arg2, NULL, 16);
+        }
+
+        // Ajustar dirección inicio a alineación de 4 bytes
+        start &= ~0x03;
+
+        USART_putString("\r\n--- Despliegue de Memoria (Hex Dump) ---\r\n");
+        for (uint32_t addr = start; addr <= end; addr += 4) {
+            uint32_t val = *(uint32_t *)addr;
+            sprintf(out_buf, "0x%08X: 0x%08X\r\n", (unsigned int)addr, (unsigned int)val);
+            USART_putString(out_buf);
+        }
+    }
+    // 3. Memory Display (MD [start] [end])
+    else if (strcasecmp(op, "MD") == 0) {
+        uint32_t start = 0x20000000; // Dirección inicial por defecto (SRAM)
+        uint32_t end = start + 0x40;  // 64 bytes por defecto (0x40)
+
+        // Si el usuario ingresa inicio
+        if (parsed >= 2) {
+            start = (uint32_t)strtoul(arg1, NULL, 16);
+            end = start + 0x40; // Mantener un rango de 64 bytes si no da el final
+        }
+        // Si el usuario ingresa inicio y fin
+        if (parsed >= 3) {
+            end = (uint32_t)strtoul(arg2, NULL, 16);
+        }
+
+        // Ajustar dirección inicio a alineación de 4 bytes
+        start &= ~0x03;
+
+        USART_putString("\r\n--- Despliegue de Memoria (Hex Dump) ---\r\n");
+        for (uint32_t addr = start; addr <= end; addr += 4) {
+            uint32_t val = *(uint32_t *)addr;
+            sprintf(out_buf, "0x%08X: 0x%08X\r\n", (unsigned int)addr, (unsigned int)val);
+            USART_putString(out_buf);
+        }
+    }
+    // 4. Memory Modify (MM addr data [size])
+    else if (strcasecmp(op, "MM") == 0) {
+        if (parsed < 3) {
+            USART_putString("\r\nSintaxis: MM addr data [size]\r\n");
+            return;
+        }
+
+        uint32_t addr = (uint32_t)strtoul(arg1, NULL, 16);
+        uint32_t data = (uint32_t)strtoul(arg2, NULL, 16);
+        int size = (parsed >= 4) ? atoi(arg3) : 1; // Default a 1 byte si no se especifica
+
+        // Validar que la dirección pertenezca a la memoria RAM (0x20000000)
+        if (addr < 0x20000000 || addr > 0x20007FFF) {
+            USART_putString("\r\nError: Direccion fuera del rango de la SRAM segura.\r\n");
+            return;
+        }
+
+        if (size == 1) {
+            *(uint8_t *)addr = (uint8_t)data;
+        } else if (size == 2) {
+            *(uint16_t *)addr = (uint16_t)data;
+        } else if (size == 4) {
+            *(uint32_t *)addr = (uint32_t)data;
+        } else {
+            USART_putString("\r\nError: Tamanio invalido (Usar 1, 2 o 4 bytes).\r\n");
+            return;
+        }
+
+        sprintf(out_buf, "\r\nMemoria 0x%08X modificada con valor 0x%X (tamanio: %d byte/s)\r\n", 
+                (unsigned int)addr, (unsigned int)data, size);
+        USART_putString(out_buf);
+    }
     else {
         USART_putString("\r\nComando no reconocido.\r\n");
     }
