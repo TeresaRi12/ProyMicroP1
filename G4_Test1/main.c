@@ -9,6 +9,7 @@
 
 extern void get_cpu_registers(uint32_t *reg_array);
 extern void set_cpu_register(uint32_t *reg_array, uint32_t reg_num, uint32_t val);
+extern void jump_to_address(uint32_t addr);
 
 
 char out_buf[128]; 
@@ -173,11 +174,34 @@ void process_command(char *cmd) {
                 (unsigned int)start, (unsigned int)end, (unsigned int)data, size);
         USART_putString(out_buf);
     }
+    // 6. Run Code (RUN addr)
+    else if (strcasecmp(op, "RUN") == 0) {
+        if (parsed < 2) {
+            USART_putString("\r\nSintaxis: RUN addr\r\n");
+            return;
+        }
+
+        uint32_t target_addr = (uint32_t)strtoul(arg1, NULL, 16);
+
+        // Validar dirección dentro de la SRAM
+        if (target_addr < 0x20000000 || target_addr > 0x20007FFF) {
+            USART_putString("\r\nError: Direccion fuera del rango de la SRAM.\r\n");
+            return;
+        }
+
+        sprintf(out_buf, "\r\nEjecutando codigo en 0x%08X...\r\n", (unsigned int)target_addr);
+        USART_putString(out_buf);
+
+        // Llamar a la subrutina en ensamblador para saltar a la dirección
+        jump_to_address(target_addr);
+
+        // Si el código ejecutado en RAM hace un "BX LR", volverá a esta línea:
+        USART_putString("\r\nRetorno exitoso de la ejecucion.\r\n");
+    }
     else {
         USART_putString("\r\nComando no reconocido.\r\n");
     }
 }
-
 int main(void) {
     USART_config(115200);
     

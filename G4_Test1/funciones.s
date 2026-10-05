@@ -3,6 +3,7 @@
 
         EXPORT get_cpu_registers
         EXPORT set_cpu_register
+        EXPORT jump_to_address
 
 ;-------------------------------------------------------------------------------
 ; void get_cpu_registers(uint32_t *reg_array);
@@ -60,4 +61,18 @@ exit_set
     BX      LR
     ENDP
 
+    
+    
+;-------------------------------------------------------------------------------
+; void jump_to_address(uint32_t addr)
+; Entrada: R0 = Dirección de memoria a ejecutar (ej. 0x20000000)
+;-------------------------------------------------------------------------------
+jump_to_address PROC
+    ; 1. Asegurar que el Thumb bit (Bit 0) esté en 1
+    ORR     R0, R0, #1
+    
+    ; 2. Salto indirecto a la dirección cargada en R0
+    BX      R0
+    
+    ENDP
     END
