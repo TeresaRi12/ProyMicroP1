@@ -10,6 +10,7 @@
 extern void get_cpu_registers(uint32_t *reg_array);
 extern void set_cpu_register(uint32_t *reg_array, uint32_t reg_num, uint32_t val);
 extern void jump_to_address(uint32_t addr);
+extern uint32_t call_subroutine(uint32_t addr, uint32_t arg0, uint32_t arg1, uint32_t arg2);
 
 
 char out_buf[128]; 
@@ -197,6 +198,33 @@ void process_command(char *cmd) {
 
         // Si el código ejecutado en RAM hace un "BX LR", volverá a esta línea:
         USART_putString("\r\nRetorno exitoso de la ejecucion.\r\n");
+    }
+    else if (strcasecmp(op, "CALL") == 0) {
+        if (parsed < 2) {
+            USART_putString("\r\nSintaxis: CALL addr [arg1] [arg2] [arg3]\r\n");
+            return;
+        }
+
+        uint32_t target_addr = (uint32_t)strtoul(arg1, NULL, 16);
+        uint32_t a0 = (parsed >= 3) ? (uint32_t)strtoul(arg2, NULL, 16) : 0;
+        uint32_t a1 = (parsed >= 4) ? (uint32_t)strtoul(arg3, NULL, 16) : 0;
+        uint32_t a2 = (parsed >= 5) ? (uint32_t)strtoul(arg4, NULL, 16) : 0;
+
+        // Validar dirección dentro de la SRAM
+        if (target_addr < 0x20000000 || target_addr > 0x20007FFF) {
+            USART_putString("\r\nError: Direccion fuera del rango de la SRAM.\r\n");
+            return;
+        }
+
+        sprintf(out_buf, "\r\nLlamando subrutina en 0x%08X...\r\n", (unsigned int)target_addr);
+        USART_putString(out_buf);
+
+        // Ejecutar la subrutina
+        uint32_t res = call_subroutine(target_addr, a0, a1, a2);
+
+        // Mostrar el resultado devuelto en R0 por la subrutina
+        sprintf(out_buf, "Subrutina finalizada. Valor retornado (R0): 0x%08X\r\n", (unsigned int)res);
+        USART_putString(out_buf);
     }
     else {
         USART_putString("\r\nComando no reconocido.\r\n");

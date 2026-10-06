@@ -4,6 +4,7 @@
         EXPORT get_cpu_registers
         EXPORT set_cpu_register
         EXPORT jump_to_address
+        EXPORT call_subroutine
 
 ;-------------------------------------------------------------------------------
 ; void get_cpu_registers(uint32_t *reg_array);
@@ -75,4 +76,23 @@ jump_to_address PROC
     BX      R0
     
     ENDP
-    END
+
+;-------------------------------------------------------------------------------
+; uint32_t call_subroutine(uint32_t addr, uint32_t arg0, uint32_t arg1, uint32_t arg2)
+;-------------------------------------------------------------------------------
+call_subroutine PROC
+        PUSH    {R4-R11, LR}        ; Preservar contexto del monitor y LR
+
+        ORR     R0, R0, #1          ; Forzar Thumb-bit (Bit 0 en 1)
+        MOV     R12, R0             ; Guardar la dirección destino en R12
+
+        MOV     R0, R1              ; Alinear argumentos para la subrutina
+        MOV     R1, R2
+        MOV     R2, R3
+
+        BLX     R12                 ; Ejecutar subrutina y guardar retorno en LR
+
+        POP     {R4-R11, PC}        ; Restaurar contexto y retornar al monitor
+        ENDP
+
+        END
